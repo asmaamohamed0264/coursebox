@@ -1,21 +1,18 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
-import postgres from 'postgres';
-import { drizzle as drizzlePostgres } from 'drizzle-orm/postgres-js';
 
-// Detectează tipul de conexiune bazat pe connection string
+// Folosim doar Neon serverless care funcționează și cu PostgreSQL standard
+// prin protocol HTTP, perfect pentru Next.js
 const connectionString = process.env.NEXT_PUBLIC_DB_CONNECTION_STRING || process.env.DATABASE_URL;
 
-let db;
-
-if (connectionString?.includes('neon.tech') || connectionString?.includes('neon.tech')) {
-  // Folosește Neon Database (serverless)
-  const sql = neon(connectionString);
-  db = drizzleNeon(sql);
-} else {
-  // Folosește PostgreSQL standard
-  const client = postgres(connectionString);
-  db = drizzlePostgres(client);
+if (!connectionString) {
+  throw new Error('DATABASE_URL or NEXT_PUBLIC_DB_CONNECTION_STRING is not set');
 }
+
+// Convertim connection string pentru Neon serverless (funcționează cu orice PostgreSQL)
+// Neon serverless poate lucra cu orice PostgreSQL dacă este accesibil prin HTTP
+// Pentru PostgreSQL standard pe Docker, folosim connection string-ul direct
+const sql = neon(connectionString);
+const db = drizzleNeon(sql);
 
 export { db };
