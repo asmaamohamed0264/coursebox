@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: coursebox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-coursebox_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-coursebox_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - coursebox-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-coursebox_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coursebox-nextjs
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-coursebox_user}:${POSTGRES_PASSWORD:-change_me_secure_password}@postgres:5432/${POSTGRES_DB:-coursebox_db}
+      NEXT_PUBLIC_DB_CONNECTION_STRING: postgresql://${POSTGRES_USER:-coursebox_user}:${POSTGRES_PASSWORD:-change_me_secure_password}@postgres:5432/${POSTGRES_DB:-coursebox_db}
+      NEXT_PUBLIC_CLERK_FRONTEND_API: ${NEXT_PUBLIC_CLERK_FRONTEND_API}
+      CLERK_API_KEY: ${CLERK_API_KEY}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      NEXT_PUBLIC_GEMINI_API_KEY: ${NEXT_PUBLIC_GEMINI_API_KEY}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY}
+      NEXT_PUBLIC_SITE_URL: https://curs.qub3.uk
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - coursebox-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: coursebox-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - nextjs
+    networks:
+      - coursebox-network
+
+networks:
+  coursebox-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+

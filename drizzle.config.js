@@ -3,6 +3,6 @@ export default {
     schema: "./configs/schema.js",
     dialect: 'postgresql',
     dbCredentials: {
-      url: 'postgresql://db_owner:MjKy9IO4DHxU@ep-frosty-mode-a5gt4pcp.us-east-2.aws.neon.tech/AI%20Course?sslmode=require',
+      url: process.env.DATABASE_URL || process.env.NEXT_PUBLIC_DB_CONNECTION_STRING || 'postgresql://coursebox_user:change_me_secure_password@localhost:5432/coursebox_db',
     }
   };
