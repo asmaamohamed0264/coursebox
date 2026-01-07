@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "push": "git add . && git commit -m \"Auto-commit: $(date '+%Y-%m-%d %H:%M:%S')\" && git push origin main || true",
+    "push:force": "git add . && git commit -m \"Auto-commit: $(date '+%Y-%m-%d %H:%M:%S')\" && git push -f origin main || true"
   },
   "dependencies": {
     "@clerk/nextjs": "^5.4.1",
