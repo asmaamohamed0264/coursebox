@@ -1,10 +1,7 @@
 "use client";
-import { db } from "@/configs/db";
 import { useUser } from "@clerk/nextjs";
-import { desc, eq } from "drizzle-orm";
 import React, { useContext, useEffect, useState } from "react";
 import CourseCard from "./CourseCard";
-import { CourseList } from '@/configs/schema'
 import { UserCourseListContext } from "@/app/_context/UserCourseListContext";
 
 const UserCourseList = () => {
@@ -17,12 +14,15 @@ const UserCourseList = () => {
 
   
   const getUserCourses=async()=>{
-    const result=await db.select().from(CourseList)
-    .where(eq(CourseList?.createdBy,user?.primaryEmailAddress?.emailAddress))
-    .orderBy(desc(CourseList.id))
-    setCourseList(result);
-    setUserCourseList(result);
-    
+    try {
+      const response = await fetch(`/api/courses?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
+      if (!response.ok) throw new Error('Failed to fetch courses');
+      const result = await response.json();
+      setCourseList(result);
+      setUserCourseList(result);
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
   }
 
   return (

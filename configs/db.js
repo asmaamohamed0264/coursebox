@@ -5,14 +5,21 @@ import { drizzle as drizzleNeon } from 'drizzle-orm/neon-http';
 // prin protocol HTTP, perfect pentru Next.js
 const connectionString = process.env.NEXT_PUBLIC_DB_CONNECTION_STRING || process.env.DATABASE_URL;
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL or NEXT_PUBLIC_DB_CONNECTION_STRING is not set');
-}
+// Creăm db doar dacă connection string este disponibil (pentru server-side)
+let db = null;
 
-// Convertim connection string pentru Neon serverless (funcționează cu orice PostgreSQL)
-// Neon serverless poate lucra cu orice PostgreSQL dacă este accesibil prin HTTP
-// Pentru PostgreSQL standard pe Docker, folosim connection string-ul direct
-const sql = neon(connectionString);
-const db = drizzleNeon(sql);
+if (connectionString) {
+  try {
+    const sql = neon(connectionString);
+    db = drizzleNeon(sql);
+  } catch (error) {
+    console.error('Error initializing database:', error);
+  }
+} else {
+  // În client-side, db va fi null - folosim API routes
+  if (typeof window === 'undefined') {
+    console.warn('DATABASE_URL or NEXT_PUBLIC_DB_CONNECTION_STRING is not set');
+  }
+}
 
 export { db };

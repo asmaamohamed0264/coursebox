@@ -6,9 +6,6 @@ import { HiOutlineRectangleStack } from "react-icons/hi2";
 import EditCourseBasicInfo from './EditCourseBasicInfo';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { storage } from '@/configs/firebaseConfig';
-import { db } from '@/configs/db';
-import { CourseList } from '@/configs/schema';
-import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 function CourseBasicInfo({course,refreshData,edit=true}) {
 
@@ -38,10 +35,18 @@ function CourseBasicInfo({course,refreshData,edit=true}) {
       getDownloadURL(storageRef).then(async(downloadUrl)=>{
         console.log(downloadUrl);
         
-        await db.update(CourseList).set({
-          courseBanner:downloadUrl
-        }).where(eq(CourseList.id,course?.id))
-
+        try {
+          const response = await fetch(`/api/courses/${course?.courseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              courseBanner: downloadUrl
+            })
+          })
+          if (!response.ok) throw new Error('Failed to update course banner')
+        } catch (error) {
+          console.error('Error updating course banner:', error)
+        }
       })
     })
 

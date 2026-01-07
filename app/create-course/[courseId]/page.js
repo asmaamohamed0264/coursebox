@@ -1,8 +1,5 @@
 "use client"
-import { db } from '@/configs/db'
-import { Chapters, CourseList } from '@/configs/schema'
 import { useUser } from '@clerk/nextjs'
-import { and, eq } from 'drizzle-orm'
 import React, { useEffect, useState } from 'react'
 import CourseBasicInfo from './_components/CourseBasicInfo'
 import CourseDetails from './_components/CourseDetails'
@@ -23,12 +20,15 @@ function CourseLayout({ params }) {
   }, [params,user])
 
   const GetCourse = async () => {
-    const result = await db.select().from(CourseList)
-      .where(and(eq(CourseList.courseId, params?.courseId),
-        eq(CourseList?.createdBy, user?.primaryEmailAddress?.emailAddress)))
-    
-        setCourse(result[0]);
-        console.log(result);
+    try {
+      const response = await fetch(`/api/courses/${params?.courseId}?createdBy=${encodeURIComponent(user?.primaryEmailAddress?.emailAddress || '')}`);
+      if (!response.ok) throw new Error('Failed to fetch course');
+      const result = await response.json();
+      setCourse(result);
+      console.log(result);
+    } catch (error) {
+      console.error('Error fetching course:', error);
+    }
   }
 
   const GenerateChapterContent=async()=>{
@@ -55,27 +55,37 @@ function CourseLayout({ params }) {
               const content=JSON.parse(result?.response?.text())
               
               // Save Chapter Content + Video URL
-             const resp= await db.insert(Chapters).values({
-                 chapterId:index,
-                 courseId:course?.courseId,
-                 content:content,
-                 videoId:videoId
-              }).returning({id:Chapters.id})
-              console.log(resp)
+              const resp = await fetch('/api/chapters/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chapterId: index,
+                  courseId: course?.courseId,
+                  content: content,
+                  videoId: videoId
+                })
+              })
+              if (!resp.ok) throw new Error('Failed to create chapter')
+              const result = await resp.json()
+              console.log(result)
               setLoading(false)
           }catch(e)
           {
             setLoading(false);
             console.log(e)
           }
-          await db.update(CourseList).set({
-            publish:true
-          })
-
-         if(index==chapters?.length-1) 
-         {
-          router.replace('/create-course/'+course?.courseId+"/finish")
-         }
+          
+          // Publish course on last chapter
+          if(index==chapters?.length-1) {
+            try {
+              await fetch(`/api/courses/${course?.courseId}/publish`, {
+                method: 'PUT'
+              })
+            } catch (error) {
+              console.error('Error publishing course:', error)
+            }
+            router.replace('/create-course/'+course?.courseId+"/finish")
+          }
       //  }
 
     })

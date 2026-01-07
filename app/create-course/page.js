@@ -8,12 +8,10 @@ import SelectOption from "./_components/SelectOption";
 import { UserInputContext } from "../_context/UserInputContext";
 import { GenerateCourseLayout_AI } from "@/configs/AiModel";
 import LoadingDialog from "./_components/LoadingDialog";
-import { CourseList } from "@/configs/schema";
 import { useUser } from "@clerk/nextjs";
 import { UserProfile } from "@clerk/clerk-react";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from 'uuid';
-import { db } from "@/configs/db";
 
 const CreateCourse = () => {
   const StepperOptions = [
@@ -75,19 +73,29 @@ const CreateCourse = () => {
   const SaveCourseLayoutInDb = async (courseLayout) => {
     var id = uuidv4();
     setLoading(true)
-    const res = await db.insert(CourseList).values({
-      courseId: id,
-      name:userCourseInput?.topic,
-      level:userCourseInput?.level,
-      category:userCourseInput?.category,
-      courseOutput:courseLayout,
-      createdBy:user?.primaryEmailAddress?.emailAddress,
-      userName:user?.fullName,
-      userProfileImage:user?.imageUrl
-    })
-    console.log("Finish");
-    setLoading(false);
-    router.replace('/create-course/'+id)
+    try {
+      const response = await fetch('/api/courses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          courseId: id,
+          name: userCourseInput?.topic,
+          level: userCourseInput?.level,
+          category: userCourseInput?.category,
+          courseOutput: courseLayout,
+          createdBy: user?.primaryEmailAddress?.emailAddress,
+          userName: user?.fullName,
+          userProfileImage: user?.imageUrl
+        })
+      })
+      if (!response.ok) throw new Error('Failed to create course')
+      console.log("Finish");
+      setLoading(false);
+      router.replace('/create-course/'+id)
+    } catch (error) {
+      console.error('Error creating course:', error)
+      setLoading(false)
+    }
   }
   
   return (

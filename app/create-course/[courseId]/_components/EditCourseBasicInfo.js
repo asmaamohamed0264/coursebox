@@ -13,9 +13,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { db } from '@/configs/db';
-import { CourseList } from '@/configs/schema';
-import { eq } from 'drizzle-orm';
 function EditCourseBasicInfo({course,refreshData}) {
 
     const [name,setName]=useState();
@@ -28,12 +25,19 @@ function EditCourseBasicInfo({course,refreshData}) {
     const onUpdateHandler=async()=>{
         course.courseOutput.course.name=name;
         course.courseOutput.course.description=description;
-        const result=await db.update(CourseList).set({
-            courseOutput:course?.courseOutput
-        }).where(eq(CourseList?.id,course?.id))
-        .returning({id:CourseList.id});
-
-        refreshData(true)
+        try {
+            const response = await fetch(`/api/courses/${course?.courseId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    courseOutput: course?.courseOutput
+                })
+            })
+            if (!response.ok) throw new Error('Failed to update course')
+            if (refreshData) refreshData(true)
+        } catch (error) {
+            console.error('Error updating course:', error)
+        }
     }
 
   return (

@@ -3,22 +3,23 @@ import React from 'react'
 import { HiOutlineBookOpen } from "react-icons/hi2";
 import { HiMiniEllipsisVertical } from "react-icons/hi2";
 import DropdownOption from './DropdownOption';
-import { db } from '@/configs/db';
-import { CourseList } from '@/configs/schema';
-import { eq } from 'drizzle-orm';
 import Link from 'next/link';
 
 
 function CourseCard({course,refreshData,displayUser=false}) {
 
     const handleOnDelete=async()=>{
-        const resp=await db.delete(CourseList)
-        .where(eq(CourseList.id,course?.id))
-        .returning({id:CourseList?.id})
-        
-        if(resp)
-        {
-            refreshData()
+        try {
+            const response = await fetch(`/api/courses/${course?.courseId}/delete?id=${course?.id}`, {
+                method: 'DELETE'
+            })
+            if (!response.ok) throw new Error('Failed to delete course')
+            const result = await response.json()
+            if (result.success && refreshData) {
+                refreshData()
+            }
+        } catch (error) {
+            console.error('Error deleting course:', error)
         }
     }
 
