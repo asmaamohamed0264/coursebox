@@ -50,9 +50,9 @@ function CourseLayout({ params }) {
               console.log(resp);
             })
             //generate chapter content
-              const result=await GenerateChapterContent_AI.sendMessage(PROMPT);
-              // console.log(result?.response?.text());
-              const content=JSON.parse(result?.response?.text())
+              const aiResult=await GenerateChapterContent_AI.sendMessage(PROMPT);
+              // console.log(aiResult?.response?.text());
+              const content=JSON.parse(aiResult?.response?.text())
               
               // Save Chapter Content + Video URL
               const resp = await fetch('/api/chapters/create', {
@@ -66,7 +66,8 @@ function CourseLayout({ params }) {
                 })
               })
               if (!resp.ok) throw new Error('Failed to create chapter')
-              const result = await resp.json()
+              const chapterResult = await resp.json()
+              console.log(chapterResult)
               console.log(result)
               setLoading(false)
           }catch(e)
